@@ -4,14 +4,15 @@ import { Song } from "../types";
 
 export const fetchSongsByLetter = async (letter: string): Promise<Song[]> => {
   try {
-    // Initializing directly with process.env.API_KEY as per guidelines
+    // Ensure we initialize with the injected API key
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
     
+    // Using gemini-3-flash-preview as it's more widely accessible and faster
     const response = await ai.models.generateContent({
-      model: "gemini-3-pro-preview", // Using Pro for better knowledge retrieval of Bollywood songs
+      model: "gemini-3-flash-preview",
       contents: `Provide a list of 10 popular Bollywood songs starting with the letter "${letter}".`,
       config: {
-        systemInstruction: "You are a Bollywood music expert. Your task is to provide exactly 10 iconic hit songs for the given letter. Return ONLY a JSON array. Each object in the array MUST have 'title', 'movie', and 'lyrics' (2 lines of the song's opening or most famous hook). If no songs are found, return an empty array [].",
+        systemInstruction: "You are a Bollywood music expert. Provide exactly 10 iconic hit songs for the given letter. Return ONLY a JSON array. Each object in the array MUST have 'title', 'movie', and 'lyrics' (exactly 2 lines). If no songs are found, return [].",
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.ARRAY,
@@ -30,25 +31,21 @@ export const fetchSongsByLetter = async (letter: string): Promise<Song[]> => {
 
     const text = response.text;
     if (!text) {
-      console.warn("Gemini returned empty text response");
       return [];
     }
 
     try {
-      const parsed = JSON.parse(text.trim());
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (parseError) {
-      console.error("Failed to parse Gemini response as JSON:", text);
-      // Fallback: try to find JSON block if model ignored mime type
-      const jsonMatch = text.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]);
-      }
-      throw parseError;
+      return JSON.parse(text.trim());
+    } catch (e) {
+      console.error("JSON Parse Error:", text);
+      // Fallback regex for extracted JSON
+      const match = text.match(/\[.*\]/s);
+      if (match) return JSON.parse(match[0]);
+      return [];
     }
-  } catch (error) {
-    console.error("Detailed error in fetchSongsByLetter:", error);
-    // Return an empty array so the UI can show its "Not found" state instead of crashing
-    return [];
+  } catch (error: any) {
+    // Log the specific error for debugging but throw to let the UI handle it
+    console.error("Gemini API Error:", error);
+    throw error;
   }
 };

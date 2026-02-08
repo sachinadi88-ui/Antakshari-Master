@@ -6,29 +6,37 @@ import { Song } from './types';
 const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
 const App: React.FC = () => {
-  const [selectedLetter, setSelectedLetter] = useState<string>('A');
+  const [selectedLetter, setSelectedLetter] = useState<string>('');
   const [songs, setSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadSongs = useCallback(async (letter: string) => {
+    if (!letter) return;
     setLoading(true);
     setError(null);
     try {
       const data = await fetchSongsByLetter(letter);
       setSongs(data);
       if (data.length === 0) {
-        setError("Could not find songs for this letter. Try another one!");
+        setError("Could not find any songs for this letter. Try another one!");
       }
-    } catch (err) {
-      setError("Failed to fetch songs. Check your connection.");
+    } catch (err: any) {
+      console.error(err);
+      if (err?.message?.includes('403') || err?.status === 403) {
+        setError("API Permission Error (403). Please ensure your API Key has access to Gemini Flash models.");
+      } else {
+        setError("Something went wrong while fetching songs. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadSongs(selectedLetter);
+    if (selectedLetter) {
+      loadSongs(selectedLetter);
+    }
   }, [selectedLetter, loadSongs]);
 
   return (
@@ -60,6 +68,7 @@ const App: React.FC = () => {
               onChange={(e) => setSelectedLetter(e.target.value)}
               className="w-full bg-[#f4e4bc] border-2 border-orange-900 p-3 rounded text-xl focus:outline-none focus:ring-2 focus:ring-orange-800 text-orange-950"
             >
+              <option value="" disabled>Select a letter...</option>
               {LETTERS.map(l => (
                 <option key={l} value={l}>{l}</option>
               ))}
@@ -85,7 +94,7 @@ const App: React.FC = () => {
 
             <div className="mt-8 pt-4 border-t border-orange-900 hidden md:block opacity-75">
               <p className="text-xs text-orange-800 italic">
-                Tips: Use these songs to dominate the next family gathering!
+                Dominate your next Antakshari round with these hits!
               </p>
             </div>
           </div>
@@ -94,71 +103,76 @@ const App: React.FC = () => {
         {/* Right Side: Song List */}
         <section className="flex-1 min-h-[400px]">
           <div className="bg-[#fcf5e5] p-6 md:p-8 rounded-lg border-2 border-orange-900 shadow-[10px_10px_0px_0px_rgba(139,69,19,0.5)] h-full">
-            <div className="flex justify-between items-center mb-6 border-b-2 border-dashed border-orange-300 pb-4">
-              <h2 className="retro-title text-3xl text-orange-950 flex items-center gap-3">
-                <span className="text-4xl">🎵</span> Songs Starting with "{selectedLetter}"
-              </h2>
-              {loading && <div className="animate-spin text-2xl">💿</div>}
-            </div>
-
-            {loading ? (
-              <div className="flex flex-col items-center justify-center h-64 text-orange-800 space-y-4">
-                <div className="animate-bounce text-6xl">📀</div>
-                <p className="text-xl font-bold animate-pulse">Scanning the archives...</p>
-              </div>
-            ) : error ? (
-              <div className="text-center p-12 bg-orange-100 border-2 border-dashed border-red-400 rounded-lg text-red-800">
-                <p className="text-xl font-bold">{error}</p>
-                <button 
-                  onClick={() => loadSongs(selectedLetter)}
-                  className="mt-4 px-6 py-2 bg-orange-200 border-2 border-orange-900 text-orange-950 font-bold rounded hover:bg-orange-300 transition"
-                >
-                  Try Again
-                </button>
+            {!selectedLetter ? (
+              <div className="flex flex-col items-center justify-center h-full text-center space-y-6 opacity-80">
+                <div className="text-8xl animate-pulse">📻</div>
+                <h2 className="retro-title text-4xl text-orange-900">Ready to play?</h2>
+                <p className="text-xl text-orange-800 max-w-md">
+                  Select a letter on the left to start finding the best Bollywood tracks.
+                </p>
               </div>
             ) : (
-              <div className="space-y-6 custom-scrollbar max-h-[70vh] overflow-y-auto pr-4">
-                {songs.map((song, index) => (
-                  <div 
-                    key={`${song.title}-${index}`}
-                    className="p-5 border-2 border-[#d2b48c] bg-[#fffaf0] rounded hover:border-orange-900 hover:translate-x-1 transition-all duration-300 relative group"
-                  >
-                    <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-orange-200 text-orange-950 border-2 border-orange-900 rounded-full flex items-center justify-center font-bold text-sm shadow-md group-hover:scale-110">
-                      {index + 1}
-                    </div>
-                    
-                    <div className="ml-6">
-                      <h3 className="text-2xl font-bold text-orange-950 flex items-baseline gap-2 flex-wrap">
-                        {song.title}
-                        <span className="text-sm font-normal text-orange-700 italic border-l-2 border-orange-300 pl-2 ml-2">
-                          from {song.movie}
-                        </span>
-                      </h3>
-                      
-                      <div className="mt-3 p-3 bg-orange-50 border-l-4 border-orange-800 rounded">
-                        <p className="song-details text-xl leading-relaxed text-orange-900 italic">
-                          "{song.lyrics}"
-                        </p>
-                      </div>
-                    </div>
+              <>
+                <div className="flex justify-between items-center mb-6 border-b-2 border-dashed border-orange-300 pb-4">
+                  <h2 className="retro-title text-3xl text-orange-950 flex items-center gap-3">
+                    <span className="text-4xl">🎵</span> Songs for "{selectedLetter}"
+                  </h2>
+                  {loading && <div className="animate-spin text-2xl">💿</div>}
+                </div>
+
+                {loading ? (
+                  <div className="flex flex-col items-center justify-center h-64 text-orange-800 space-y-4">
+                    <div className="animate-bounce text-6xl">📀</div>
+                    <p className="text-xl font-bold animate-pulse">Consulting the archives...</p>
                   </div>
-                ))}
-              </div>
+                ) : error ? (
+                  <div className="text-center p-12 bg-orange-50 border-2 border-dashed border-red-300 rounded-lg text-red-800">
+                    <p className="text-lg font-bold mb-4">{error}</p>
+                    <button 
+                      onClick={() => loadSongs(selectedLetter)}
+                      className="px-6 py-2 bg-orange-200 border-2 border-orange-900 text-orange-950 font-bold rounded hover:bg-orange-300 transition shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)]"
+                    >
+                      Retry Search
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-6 custom-scrollbar max-h-[70vh] overflow-y-auto pr-4">
+                    {songs.map((song, index) => (
+                      <div 
+                        key={`${song.title}-${index}`}
+                        className="p-5 border-2 border-[#d2b48c] bg-[#fffaf0] rounded hover:border-orange-900 hover:translate-x-1 transition-all duration-300 relative group"
+                      >
+                        <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-orange-200 text-orange-950 border-2 border-orange-900 rounded-full flex items-center justify-center font-bold text-sm shadow-md group-hover:scale-110">
+                          {index + 1}
+                        </div>
+                        
+                        <div className="ml-6">
+                          <h3 className="text-2xl font-bold text-orange-950 flex items-baseline gap-2 flex-wrap">
+                            {song.title}
+                            <span className="text-sm font-normal text-orange-700 italic border-l-2 border-orange-300 pl-2 ml-2">
+                              {song.movie}
+                            </span>
+                          </h3>
+                          
+                          <div className="mt-3 p-3 bg-orange-50 border-l-4 border-orange-800 rounded">
+                            <p className="song-details text-xl leading-relaxed text-orange-900 italic">
+                              "{song.lyrics}"
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
         </section>
       </main>
 
-      {/* Footer */}
       <footer className="mt-12 text-center text-orange-900 text-xs md:text-sm py-8 border-t border-orange-200">
-        <p>© {new Date().getFullYear()} Retro Bollywood Antakshari Ltd. All Rights Reserved.</p>
-        <p className="mt-1">Powered by Gemini AI for vintage vibes.</p>
+        <p>© {new Date().getFullYear()} Retro Bollywood Antakshari. All Rights Reserved.</p>
       </footer>
-
-      {/* Decorative background elements */}
-      <div className="fixed bottom-4 right-4 w-24 h-24 opacity-20 pointer-events-none grayscale hidden md:block">
-        <img src="https://www.transparenttextures.com/patterns/p6.png" alt="" />
-      </div>
     </div>
   );
 };
