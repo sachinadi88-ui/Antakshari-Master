@@ -18,12 +18,22 @@ const App: React.FC = () => {
       const data = await fetchSongsByLetter(letter);
       setSongs(data);
       if (data.length === 0) {
-        setError("No songs found for this letter. Please choose another one.");
+        setError(`No iconic songs found starting with '${letter}'. Try another letter!`);
       }
     } catch (err: any) {
       console.error("Antakshari Master Error:", err);
-      // Reporting the raw error message to help identify the exact issue in Vercel
-      setError(err.message || "An unexpected error occurred.");
+      let msg = err.message || "";
+      
+      // Handle the specific error thrown when the API key isn't reaching the browser
+      if (msg === "MISSING_API_KEY" || msg.includes("API Key must be set")) {
+        msg = "Configuration Missing: The API key is not available in the browser. Please ensure you have added 'API_KEY' to your Vercel Environment Variables AND triggered a new deployment. For client-side apps, environment variables must be defined in the build settings.";
+      } else if (msg.includes("403") || msg.toLowerCase().includes("permission")) {
+        msg = "Permission Error (403): The API key provided does not have access to the Gemini model. Check if the project is active and billing is enabled.";
+      } else {
+        msg = `Signal Lost: ${msg || "An unexpected error occurred during the transmission."}`;
+      }
+      
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -59,9 +69,9 @@ const App: React.FC = () => {
               id="letter-select"
               value={selectedLetter}
               onChange={(e) => setSelectedLetter(e.target.value)}
-              className="w-full bg-[#f4e4bc] border-2 border-orange-900 p-3 rounded text-xl focus:outline-none focus:ring-2 focus:ring-orange-800 text-orange-950"
+              className="w-full bg-[#f4e4bc] border-2 border-orange-900 p-3 rounded text-xl focus:outline-none focus:ring-2 focus:ring-orange-800 text-orange-950 appearance-none cursor-pointer"
             >
-              <option value="" disabled>Select a letter...</option>
+              <option value="" disabled>Pick a letter...</option>
               {LETTERS.map(l => (
                 <option key={l} value={l}>{l}</option>
               ))}
@@ -84,24 +94,28 @@ const App: React.FC = () => {
                 </button>
               ))}
             </div>
+            
+            <p className="text-xs text-orange-800 italic mt-4 text-center">
+              Tune in to find the perfect starting song!
+            </p>
           </div>
         </aside>
 
         <section className="flex-1 min-h-[400px]">
-          <div className="bg-[#fcf5e5] p-6 md:p-8 rounded-lg border-2 border-orange-900 shadow-[10px_10px_0px_0px_rgba(139,69,19,0.5)] h-full">
+          <div className="bg-[#fcf5e5] p-6 md:p-8 rounded-lg border-2 border-orange-900 shadow-[10px_10px_0px_0px_rgba(139,69,19,0.5)] h-full overflow-hidden flex flex-col">
             {!selectedLetter ? (
-              <div className="flex flex-col items-center justify-center h-full text-center space-y-6 opacity-80">
+              <div className="flex flex-col items-center justify-center h-full text-center space-y-6 opacity-80 py-12">
                 <div className="text-8xl animate-pulse">📻</div>
-                <h2 className="retro-title text-4xl text-orange-900">Ready to play?</h2>
+                <h2 className="retro-title text-4xl text-orange-900">Station Idle</h2>
                 <p className="text-xl text-orange-800 max-w-md">
-                  Select a letter on the left to start finding the best Bollywood tracks.
+                  Select a letter on the frequency selector to begin your search.
                 </p>
               </div>
             ) : (
               <>
                 <div className="flex justify-between items-center mb-6 border-b-2 border-dashed border-orange-300 pb-4">
                   <h2 className="retro-title text-3xl text-orange-950 flex items-center gap-3">
-                    <span className="text-4xl">🎵</span> Songs for "{selectedLetter}"
+                    <span className="text-4xl">🎵</span> Top Tracks: "{selectedLetter}"
                   </h2>
                   {loading && <div className="animate-spin text-2xl">💿</div>}
                 </div>
@@ -109,49 +123,55 @@ const App: React.FC = () => {
                 {loading ? (
                   <div className="flex flex-col items-center justify-center h-64 text-orange-800 space-y-4">
                     <div className="animate-bounce text-6xl">📀</div>
-                    <p className="text-xl font-bold animate-pulse">Consulting the archives...</p>
+                    <p className="text-xl font-bold animate-pulse uppercase tracking-widest">Scanning Waves...</p>
                   </div>
                 ) : error ? (
-                  <div className="text-center p-8 bg-orange-50 border-4 border-orange-900 rounded-lg text-orange-950 shadow-inner">
+                  <div className="text-center p-8 bg-orange-50 border-4 border-orange-900 rounded-lg text-orange-950 shadow-inner my-auto">
                     <div className="text-5xl mb-4">⚠️</div>
-                    <h3 className="text-2xl font-bold mb-4 uppercase tracking-wider">Technical Difficulties</h3>
-                    <p className="text-sm font-mono mb-6 bg-white p-4 border border-orange-200 rounded text-left overflow-auto max-h-40">
+                    <h3 className="text-2xl font-bold mb-4 uppercase tracking-wider font-['Shrikhand']">Reception Error</h3>
+                    <p className="text-sm font-mono mb-6 bg-white p-4 border border-orange-200 rounded text-left overflow-auto max-h-40 leading-relaxed">
                       {error}
                     </p>
-                    <button 
-                      onClick={() => loadSongs(selectedLetter)}
-                      className="px-6 py-2 bg-orange-900 text-orange-50 font-bold rounded hover:bg-orange-800 transition uppercase tracking-tighter"
-                    >
-                      Try Again
-                    </button>
+                    <div className="flex flex-col gap-3">
+                      <button 
+                        onClick={() => loadSongs(selectedLetter)}
+                        className="px-6 py-2 bg-orange-900 text-orange-50 font-bold rounded hover:bg-orange-800 transition uppercase tracking-tighter shadow-md"
+                      >
+                        Try to Retune
+                      </button>
+                      <p className="text-xs text-orange-700 italic">
+                        Check your Vercel settings and redeploy if the key was just added.
+                      </p>
+                    </div>
                   </div>
                 ) : (
-                  <div className="space-y-6 custom-scrollbar max-h-[70vh] overflow-y-auto pr-4">
+                  <div className="space-y-6 custom-scrollbar overflow-y-auto pr-4 flex-1">
                     {songs.map((song, index) => (
                       <div 
                         key={`${song.title}-${index}`}
-                        className="p-5 border-2 border-[#d2b48c] bg-[#fffaf0] rounded hover:border-orange-900 hover:translate-x-1 transition-all duration-300 relative group"
+                        className="p-5 border-2 border-[#d2b48c] bg-[#fffaf0] rounded hover:border-orange-900 hover:translate-x-1 transition-all duration-300 relative group shadow-sm"
                       >
-                        <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-orange-200 text-orange-950 border-2 border-orange-900 rounded-full flex items-center justify-center font-bold text-sm shadow-md group-hover:scale-110">
+                        <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-orange-200 text-orange-950 border-2 border-orange-900 rounded-full flex items-center justify-center font-bold text-sm shadow-md group-hover:scale-110 transition-transform">
                           {index + 1}
                         </div>
                         
                         <div className="ml-6">
-                          <h3 className="text-2xl font-bold text-orange-950 flex items-baseline gap-2 flex-wrap">
+                          <h3 className="text-2xl font-bold text-orange-950 flex items-baseline gap-2 flex-wrap mb-1">
                             {song.title}
                             <span className="text-sm font-normal text-orange-700 italic border-l-2 border-orange-300 pl-2 ml-2">
                               {song.movie}
                             </span>
                           </h3>
                           
-                          <div className="mt-3 p-3 bg-orange-50 border-l-4 border-orange-800 rounded">
-                            <p className="song-details text-xl leading-relaxed text-orange-900 italic">
+                          <div className="mt-3 p-3 bg-orange-50 border-l-4 border-orange-800 rounded shadow-inner">
+                            <p className="text-lg leading-relaxed text-orange-900 italic font-medium">
                               "{song.lyrics}"
                             </p>
                           </div>
                         </div>
                       </div>
                     ))}
+                    <div className="h-4"></div>
                   </div>
                 )}
               </>
@@ -160,8 +180,9 @@ const App: React.FC = () => {
         </section>
       </main>
 
-      <footer className="mt-12 text-center text-orange-900 text-xs md:text-sm py-8 border-t border-orange-200">
-        <p>© {new Date().getFullYear()} Retro Bollywood Antakshari. All Rights Reserved.</p>
+      <footer className="mt-12 text-center text-orange-900 text-xs md:text-sm py-8 border-t border-orange-300 border-dashed">
+        <p className="font-bold mb-1">BOLLYWOOD ANTAKSHARI RADIO v1.0</p>
+        <p>© {new Date().getFullYear()} Retro Records Entertainment. All Rights Reserved.</p>
       </footer>
     </div>
   );
