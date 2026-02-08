@@ -1,18 +1,10 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { Song } from "../types";
 
 export const fetchSongsByLetter = async (letter: string): Promise<Song[]> => {
-  // Check if API_KEY is available in process.env
-  // On Vercel, if not using a bundler like Vite, process.env might not be shimmed.
-  const apiKey = typeof process !== 'undefined' ? process.env.API_KEY : undefined;
-
-  if (!apiKey || apiKey === "undefined") {
-    throw new Error("API_KEY_NOT_FOUND");
-  }
-
   try {
-    const ai = new GoogleGenAI({ apiKey });
+    // Initializing exactly as required by the documentation to ensure the platform can inject the key
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
     
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
@@ -42,6 +34,7 @@ export const fetchSongsByLetter = async (letter: string): Promise<Song[]> => {
     try {
       return JSON.parse(text.trim());
     } catch (e) {
+      // Robust extraction of JSON from response text in case of markdown wrapping
       const match = text.match(/\[.*\]/s);
       if (match) return JSON.parse(match[0]);
       throw new Error("Invalid response format from server.");

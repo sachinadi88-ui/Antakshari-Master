@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { fetchSongsByLetter } from './services/geminiService';
 import { Song } from './types';
@@ -23,17 +22,8 @@ const App: React.FC = () => {
       }
     } catch (err: any) {
       console.error("Antakshari Master Error:", err);
-      let msg = err.message || "";
-      
-      if (msg === "API_KEY_NOT_FOUND" || msg.includes("API Key must be set")) {
-        msg = "Configuration Error: API_KEY is missing in the browser environment. On Vercel, standard environment variables are not exposed to the client by default. Ensure your build process (e.g. Vite/esbuild) is defining 'process.env.API_KEY' for the production bundle.";
-      } else if (msg.includes("403") || msg.toLowerCase().includes("permission")) {
-        msg = "Access Denied: Your API key does not have permission for the Gemini 3 model or billing is not enabled.";
-      } else {
-        msg = `Signal Lost: ${msg || "An unexpected error occurred while tuning the radio."}`;
-      }
-      
-      setError(msg);
+      // Reporting the raw error message to help identify the exact issue in Vercel
+      setError(err.message || "An unexpected error occurred.");
     } finally {
       setLoading(false);
     }
