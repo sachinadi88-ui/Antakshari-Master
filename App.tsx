@@ -32,7 +32,7 @@ const App: React.FC = () => {
   }, [selectedLetter, loadSongs]);
 
   return (
-    <div className="min-h-screen flex flex-col p-4 md:p-8 max-w-7xl mx-auto">
+    <div className="min-h-screen flex flex-col p-4 md:p-8 max-w-7xl mx-auto relative z-10">
       {/* Header */}
       <header className="text-center mb-10 border-b-4 border-double border-orange-900 pb-6 relative">
         <div className="absolute top-0 left-0 w-12 h-12 border-t-4 border-l-4 border-orange-900 hidden md:block"></div>
@@ -123,14 +123,14 @@ const App: React.FC = () => {
                     key={`${song.title}-${index}`}
                     className="p-5 border-2 border-[#d2b48c] bg-[#fffaf0] rounded hover:border-orange-900 hover:translate-x-1 transition-all duration-300 relative group"
                   >
-                    <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-orange-300 text-orange-950 border-2 border-orange-900 rounded-full flex items-center justify-center font-bold text-sm shadow-md group-hover:scale-110">
+                    <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-orange-200 text-orange-950 border-2 border-orange-900 rounded-full flex items-center justify-center font-bold text-sm shadow-md group-hover:scale-110">
                       {index + 1}
                     </div>
                     
                     <div className="ml-6">
                       <h3 className="text-2xl font-bold text-orange-950 flex items-baseline gap-2 flex-wrap">
                         {song.title}
-                        <span className="text-sm font-normal text-orange-700 italic border-l-2 border-orange-300 pl-2">
+                        <span className="text-sm font-normal text-orange-700 italic border-l-2 border-orange-300 pl-2 ml-2">
                           from {song.movie}
                         </span>
                       </h3>
@@ -155,12 +155,9 @@ const App: React.FC = () => {
         <p className="mt-1">Powered by Gemini AI for vintage vibes.</p>
       </footer>
 
-      {/* Retro decorative elements */}
-      <div className="fixed -bottom-10 -left-10 w-40 h-40 opacity-10 pointer-events-none transform -rotate-12">
-        <img src="https://picsum.photos/seed/vinyl/200/200" alt="retro vinyl decoration" className="rounded-full grayscale" />
-      </div>
-      <div className="fixed -top-10 -right-10 w-40 h-40 opacity-10 pointer-events-none transform rotate-12">
-        <img src="https://picsum.photos/seed/cassette/200/200" alt="retro tape decoration" className="grayscale" />
+      {/* Decorative background elements */}
+      <div className="fixed bottom-4 right-4 w-24 h-24 opacity-20 pointer-events-none grayscale hidden md:block">
+        <img src="https://www.transparenttextures.com/patterns/p6.png" alt="" />
       </div>
     </div>
   );
