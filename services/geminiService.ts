@@ -2,35 +2,25 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Song } from "../types";
 
-const getApiKey = () => {
-  try {
-    return process.env.API_KEY || '';
-  } catch (e) {
-    return '';
-  }
-};
-
 export const fetchSongsByLetter = async (letter: string): Promise<Song[]> => {
   try {
-    const apiKey = getApiKey();
-    if (!apiKey) {
-      console.warn("API Key is missing in process.env.API_KEY");
-    }
-
-    const ai = new GoogleGenAI({ apiKey });
+    // Initializing directly with process.env.API_KEY as per guidelines
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+    
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: `List the top 10 most iconic all-time hit Bollywood songs starting with the letter "${letter}". For each song, provide the song title, the movie name, and exactly two lines of famous lyrics. Format the output as a JSON array.`,
+      model: "gemini-3-pro-preview", // Using Pro for better knowledge retrieval of Bollywood songs
+      contents: `Provide a list of 10 popular Bollywood songs starting with the letter "${letter}".`,
       config: {
+        systemInstruction: "You are a Bollywood music expert. Your task is to provide exactly 10 iconic hit songs for the given letter. Return ONLY a JSON array. Each object in the array MUST have 'title', 'movie', and 'lyrics' (2 lines of the song's opening or most famous hook). If no songs are found, return an empty array [].",
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.ARRAY,
           items: {
             type: Type.OBJECT,
             properties: {
-              title: { type: Type.STRING, description: "Name of the song" },
-              movie: { type: Type.STRING, description: "Name of the Bollywood movie" },
-              lyrics: { type: Type.STRING, description: "Two lines of the most iconic lyrics" },
+              title: { type: Type.STRING },
+              movie: { type: Type.STRING },
+              lyrics: { type: Type.STRING },
             },
             required: ["title", "movie", "lyrics"],
           },
@@ -38,12 +28,27 @@ export const fetchSongsByLetter = async (letter: string): Promise<Song[]> => {
       },
     });
 
-    const jsonStr = response.text?.trim();
-    if (!jsonStr) return [];
-    
-    return JSON.parse(jsonStr) as Song[];
+    const text = response.text;
+    if (!text) {
+      console.warn("Gemini returned empty text response");
+      return [];
+    }
+
+    try {
+      const parsed = JSON.parse(text.trim());
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (parseError) {
+      console.error("Failed to parse Gemini response as JSON:", text);
+      // Fallback: try to find JSON block if model ignored mime type
+      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]);
+      }
+      throw parseError;
+    }
   } catch (error) {
-    console.error("Error fetching songs:", error);
+    console.error("Detailed error in fetchSongsByLetter:", error);
+    // Return an empty array so the UI can show its "Not found" state instead of crashing
     return [];
   }
 };
