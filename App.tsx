@@ -22,11 +22,15 @@ const App: React.FC = () => {
         setError("Could not find any songs for this letter. Try another one!");
       }
     } catch (err: any) {
-      console.error(err);
-      if (err?.message?.includes('403') || err?.status === 403) {
-        setError("API Permission Error (403). Please ensure your API Key has access to Gemini Flash models.");
+      console.error("App Error Catch:", err);
+      // Detailed error reporting for Vercel debugging
+      const msg = err.message || "";
+      if (msg.includes('403') || msg.toLowerCase().includes('permission')) {
+        setError("Access Denied (403): Check if Gemini API is enabled for your key and that the key is set in Vercel Environment Variables.");
+      } else if (msg.includes('API_KEY')) {
+        setError("Configuration Error: API_KEY is missing. Add it to your Vercel project settings.");
       } else {
-        setError("Something went wrong while fetching songs. Please try again.");
+        setError(`Error: ${msg || "Something went wrong. Please try again."}`);
       }
     } finally {
       setLoading(false);
@@ -41,7 +45,6 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col p-4 md:p-8 max-w-7xl mx-auto relative z-10">
-      {/* Header */}
       <header className="text-center mb-10 border-b-4 border-double border-orange-900 pb-6 relative">
         <div className="absolute top-0 left-0 w-12 h-12 border-t-4 border-l-4 border-orange-900 hidden md:block"></div>
         <div className="absolute top-0 right-0 w-12 h-12 border-t-4 border-r-4 border-orange-900 hidden md:block"></div>
@@ -54,14 +57,12 @@ const App: React.FC = () => {
       </header>
 
       <main className="flex flex-col md:flex-row gap-8 flex-1">
-        {/* Left Side: Letter Selector */}
         <aside className="w-full md:w-1/4">
           <div className="bg-[#e9d5a1] p-6 rounded-lg border-2 border-orange-900 shadow-[8px_8px_0px_0px_rgba(139,69,19,1)] flex flex-col gap-4">
             <label htmlFor="letter-select" className="text-orange-900 font-bold text-xl mb-2 flex items-center gap-2">
               <span className="text-2xl">📻</span> Choose a Letter
             </label>
             
-            {/* Mobile Dropdown */}
             <select
               id="letter-select"
               value={selectedLetter}
@@ -91,16 +92,9 @@ const App: React.FC = () => {
                 </button>
               ))}
             </div>
-
-            <div className="mt-8 pt-4 border-t border-orange-900 hidden md:block opacity-75">
-              <p className="text-xs text-orange-800 italic">
-                Dominate your next Antakshari round with these hits!
-              </p>
-            </div>
           </div>
         </aside>
 
-        {/* Right Side: Song List */}
         <section className="flex-1 min-h-[400px]">
           <div className="bg-[#fcf5e5] p-6 md:p-8 rounded-lg border-2 border-orange-900 shadow-[10px_10px_0px_0px_rgba(139,69,19,0.5)] h-full">
             {!selectedLetter ? (
@@ -127,7 +121,7 @@ const App: React.FC = () => {
                   </div>
                 ) : error ? (
                   <div className="text-center p-12 bg-orange-50 border-2 border-dashed border-red-300 rounded-lg text-red-800">
-                    <p className="text-lg font-bold mb-4">{error}</p>
+                    <p className="text-lg font-bold mb-4 whitespace-pre-wrap">{error}</p>
                     <button 
                       onClick={() => loadSongs(selectedLetter)}
                       className="px-6 py-2 bg-orange-200 border-2 border-orange-900 text-orange-950 font-bold rounded hover:bg-orange-300 transition shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)]"

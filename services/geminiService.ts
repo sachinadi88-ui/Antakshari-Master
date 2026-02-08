@@ -3,13 +3,19 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { Song } from "../types";
 
 export const fetchSongsByLetter = async (letter: string): Promise<Song[]> => {
+  // Defensive check for the API key in browser environments
+  const apiKey = typeof process !== 'undefined' ? process.env.API_KEY : (window as any).API_KEY;
+
+  if (!apiKey) {
+    throw new Error("API_KEY is not configured in environment variables.");
+  }
+
   try {
-    // Ensure we initialize with the injected API key
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+    const ai = new GoogleGenAI({ apiKey });
     
-    // Using gemini-3-flash-preview as it's more widely accessible and faster
+    // Using gemini-flash-latest for maximum reliability and broader access
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-flash-latest",
       contents: `Provide a list of 10 popular Bollywood songs starting with the letter "${letter}".`,
       config: {
         systemInstruction: "You are a Bollywood music expert. Provide exactly 10 iconic hit songs for the given letter. Return ONLY a JSON array. Each object in the array MUST have 'title', 'movie', and 'lyrics' (exactly 2 lines). If no songs are found, return [].",
@@ -30,22 +36,20 @@ export const fetchSongsByLetter = async (letter: string): Promise<Song[]> => {
     });
 
     const text = response.text;
-    if (!text) {
-      return [];
-    }
+    if (!text) return [];
 
     try {
       return JSON.parse(text.trim());
     } catch (e) {
-      console.error("JSON Parse Error:", text);
-      // Fallback regex for extracted JSON
+      console.warn("Retrying JSON extraction from raw text...");
       const match = text.match(/\[.*\]/s);
       if (match) return JSON.parse(match[0]);
-      return [];
+      throw new Error("Failed to parse song data.");
     }
   } catch (error: any) {
-    // Log the specific error for debugging but throw to let the UI handle it
-    console.error("Gemini API Error:", error);
-    throw error;
+    console.error("Gemini Service Error:", error);
+    // Extract the most useful error message part
+    const errorMessage = error?.message || "Unknown API error";
+    throw new Error(errorMessage);
   }
 };
