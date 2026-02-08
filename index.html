@@ -23,7 +23,6 @@
       margin: 0;
       min-height: 100vh;
     }
-    /* Retro Noise Overlay */
     body::before {
       content: "";
       position: fixed;
@@ -39,20 +38,6 @@
     .retro-title {
       font-family: 'Shrikhand', cursive;
     }
-    .song-details {
-      font-family: 'Cormorant+Garamond', serif;
-    }
-    .custom-scrollbar::-webkit-scrollbar {
-      width: 8px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-track {
-      background: #e5d1a4;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: var(--retro-accent);
-      border-radius: 4px;
-    }
-    /* Subtle vignette for depth */
     .vignette {
       position: fixed;
       top: 0;
@@ -63,20 +48,37 @@
       pointer-events: none;
       z-index: 1000;
     }
+    #initial-loader {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      width: 100%;
+    }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
   </style>
   <script type="importmap">
-  {
-    "imports": {
-      "@google/genai": "https://esm.sh/@google/genai@^1.40.0",
-      "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-      "react/": "https://esm.sh/react@^19.2.4/",
-      "react": "https://esm.sh/react@^19.2.4"
-    }
+{
+  "imports": {
+    "@google/genai": "https://esm.sh/@google/genai@^1.40.0",
+    "react-dom/client": "https://esm.sh/react-dom@^19.0.0/client",
+    "react-dom": "https://esm.sh/react-dom@^19.0.0",
+    "react": "https://esm.sh/react@^19.0.0",
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/"
   }
-  </script>
+}
+</script>
 </head>
 <body>
   <div class="vignette"></div>
-  <div id="root"></div>
+  <div id="root">
+    <div id="initial-loader">
+      <div style="font-size: 4rem; animation: spin 2s linear infinite;">💿</div>
+      <p style="font-family: 'Shrikhand', cursive; margin-top: 1rem; color: var(--retro-brown);">Warming up the record player...</p>
+    </div>
+  </div>
+  <script type="module" src="index.tsx"></script>
 </body>
 </html>
