@@ -3,11 +3,17 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { Song } from "../types";
 
 export const fetchSongsByLetter = async (letter: string): Promise<Song[]> => {
+  // Check if API_KEY is available in process.env
+  // On Vercel, if not using a bundler like Vite, process.env might not be shimmed.
+  const apiKey = typeof process !== 'undefined' ? process.env.API_KEY : undefined;
+
+  if (!apiKey || apiKey === "undefined") {
+    throw new Error("API_KEY_NOT_FOUND");
+  }
+
   try {
-    // Standard initialization per guidelines
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+    const ai = new GoogleGenAI({ apiKey });
     
-    // Using gemini-3-flash-preview as recommended for basic text tasks
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `Provide a list of 10 popular Bollywood songs starting with the letter "${letter}".`,
@@ -36,15 +42,12 @@ export const fetchSongsByLetter = async (letter: string): Promise<Song[]> => {
     try {
       return JSON.parse(text.trim());
     } catch (e) {
-      console.warn("Retrying JSON extraction from raw text...");
       const match = text.match(/\[.*\]/s);
       if (match) return JSON.parse(match[0]);
-      throw new Error("Failed to parse song data.");
+      throw new Error("Invalid response format from server.");
     }
   } catch (error: any) {
-    console.error("Gemini Service Error:", error);
-    // Explicit error message for the UI
-    const errorMessage = error?.message || "Check API Key and Permissions";
-    throw new Error(errorMessage);
+    console.error("Gemini API Error:", error);
+    throw error;
   }
 };

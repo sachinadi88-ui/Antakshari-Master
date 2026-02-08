@@ -19,19 +19,18 @@ const App: React.FC = () => {
       const data = await fetchSongsByLetter(letter);
       setSongs(data);
       if (data.length === 0) {
-        setError("Could not find any songs for this letter. Try another one!");
+        setError("No songs found for this letter. Please choose another one.");
       }
     } catch (err: any) {
-      console.error("App Error:", err);
-      let msg = err.message || "An unexpected error occurred.";
+      console.error("Antakshari Master Error:", err);
+      let msg = err.message || "";
       
-      // Handle environment-specific ReferenceErrors or API errors
-      if (msg.includes("process is not defined")) {
-        msg = "ReferenceError: 'process' is not defined in the browser. This usually means the deployment platform did not inject environment variables into the client bundle.";
+      if (msg === "API_KEY_NOT_FOUND" || msg.includes("API Key must be set")) {
+        msg = "Configuration Error: API_KEY is missing in the browser environment. On Vercel, standard environment variables are not exposed to the client by default. Ensure your build process (e.g. Vite/esbuild) is defining 'process.env.API_KEY' for the production bundle.";
       } else if (msg.includes("403") || msg.toLowerCase().includes("permission")) {
-        msg = "Permission Denied (403): Your API Key might not have access to 'gemini-3-flash-preview' or billing might be disabled.";
-      } else if (msg.toLowerCase().includes("api_key")) {
-        msg = "API_KEY Missing: Ensure you have added API_KEY to your environment variables.";
+        msg = "Access Denied: Your API key does not have permission for the Gemini 3 model or billing is not enabled.";
+      } else {
+        msg = `Signal Lost: ${msg || "An unexpected error occurred while tuning the radio."}`;
       }
       
       setError(msg);
@@ -123,13 +122,17 @@ const App: React.FC = () => {
                     <p className="text-xl font-bold animate-pulse">Consulting the archives...</p>
                   </div>
                 ) : error ? (
-                  <div className="text-center p-12 bg-orange-50 border-2 border-dashed border-red-300 rounded-lg text-red-800">
-                    <p className="text-lg font-bold mb-4 whitespace-pre-wrap">{error}</p>
+                  <div className="text-center p-8 bg-orange-50 border-4 border-orange-900 rounded-lg text-orange-950 shadow-inner">
+                    <div className="text-5xl mb-4">⚠️</div>
+                    <h3 className="text-2xl font-bold mb-4 uppercase tracking-wider">Technical Difficulties</h3>
+                    <p className="text-sm font-mono mb-6 bg-white p-4 border border-orange-200 rounded text-left overflow-auto max-h-40">
+                      {error}
+                    </p>
                     <button 
                       onClick={() => loadSongs(selectedLetter)}
-                      className="px-6 py-2 bg-orange-200 border-2 border-orange-900 text-orange-950 font-bold rounded hover:bg-orange-300 transition shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)]"
+                      className="px-6 py-2 bg-orange-900 text-orange-50 font-bold rounded hover:bg-orange-800 transition uppercase tracking-tighter"
                     >
-                      Retry Search
+                      Try Again
                     </button>
                   </div>
                 ) : (
