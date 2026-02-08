@@ -22,16 +22,19 @@ const App: React.FC = () => {
         setError("Could not find any songs for this letter. Try another one!");
       }
     } catch (err: any) {
-      console.error("App Error Catch:", err);
-      // Detailed error reporting for Vercel debugging
-      const msg = err.message || "";
-      if (msg.includes('403') || msg.toLowerCase().includes('permission')) {
-        setError("Access Denied (403): Check if Gemini API is enabled for your key and that the key is set in Vercel Environment Variables.");
-      } else if (msg.includes('API_KEY')) {
-        setError("Configuration Error: API_KEY is missing. Add it to your Vercel project settings.");
-      } else {
-        setError(`Error: ${msg || "Something went wrong. Please try again."}`);
+      console.error("App Error:", err);
+      let msg = err.message || "An unexpected error occurred.";
+      
+      // Handle environment-specific ReferenceErrors or API errors
+      if (msg.includes("process is not defined")) {
+        msg = "ReferenceError: 'process' is not defined in the browser. This usually means the deployment platform did not inject environment variables into the client bundle.";
+      } else if (msg.includes("403") || msg.toLowerCase().includes("permission")) {
+        msg = "Permission Denied (403): Your API Key might not have access to 'gemini-3-flash-preview' or billing might be disabled.";
+      } else if (msg.toLowerCase().includes("api_key")) {
+        msg = "API_KEY Missing: Ensure you have added API_KEY to your environment variables.";
       }
+      
+      setError(msg);
     } finally {
       setLoading(false);
     }

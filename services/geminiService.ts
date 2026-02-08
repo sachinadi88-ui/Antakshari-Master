@@ -3,19 +3,13 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { Song } from "../types";
 
 export const fetchSongsByLetter = async (letter: string): Promise<Song[]> => {
-  // Defensive check for the API key in browser environments
-  const apiKey = typeof process !== 'undefined' ? process.env.API_KEY : (window as any).API_KEY;
-
-  if (!apiKey) {
-    throw new Error("API_KEY is not configured in environment variables.");
-  }
-
   try {
-    const ai = new GoogleGenAI({ apiKey });
+    // Standard initialization per guidelines
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
     
-    // Using gemini-flash-latest for maximum reliability and broader access
+    // Using gemini-3-flash-preview as recommended for basic text tasks
     const response = await ai.models.generateContent({
-      model: "gemini-flash-latest",
+      model: "gemini-3-flash-preview",
       contents: `Provide a list of 10 popular Bollywood songs starting with the letter "${letter}".`,
       config: {
         systemInstruction: "You are a Bollywood music expert. Provide exactly 10 iconic hit songs for the given letter. Return ONLY a JSON array. Each object in the array MUST have 'title', 'movie', and 'lyrics' (exactly 2 lines). If no songs are found, return [].",
@@ -30,6 +24,7 @@ export const fetchSongsByLetter = async (letter: string): Promise<Song[]> => {
               lyrics: { type: Type.STRING },
             },
             required: ["title", "movie", "lyrics"],
+            propertyOrdering: ["title", "movie", "lyrics"]
           },
         },
       },
@@ -48,8 +43,8 @@ export const fetchSongsByLetter = async (letter: string): Promise<Song[]> => {
     }
   } catch (error: any) {
     console.error("Gemini Service Error:", error);
-    // Extract the most useful error message part
-    const errorMessage = error?.message || "Unknown API error";
+    // Explicit error message for the UI
+    const errorMessage = error?.message || "Check API Key and Permissions";
     throw new Error(errorMessage);
   }
 };
